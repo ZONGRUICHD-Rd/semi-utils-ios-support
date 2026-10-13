@@ -3,5 +3,7 @@ jinja2
 numpy
 pillow
 pillow-heif
+pillow-jxl-plugin
+rawpy
 loguru
 tomli

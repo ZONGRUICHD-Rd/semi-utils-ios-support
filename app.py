@@ -11,8 +11,9 @@ from flask import render_template, jsonify, request, send_file, Flask, Response,
 from core import CONFIG_PATH
 from core.configs import load_config, load_project_info
 from core.logger import logger, init_from_config
-from core.util import (list_files, log_rt, get_exif, convert_heic_to_jpeg, get_template, get_template_content,
-                       save_template, list_templates)
+from core.image_io import BROWSER_PREVIEWABLE_SUFFIXES, to_jpeg_buffer
+from core.util import (list_files, log_rt, get_exif, get_template, get_template_content, save_template,
+                       list_templates, resolve_output_path)
 from processor.core import start_process
 
 # 加载配置
@@ -135,10 +136,10 @@ def get_file():
         return jsonify({'error': 'Path is a directory, not a file'}), 400
 
     try:
-        # HEIC 文件转换处理
-        if Path(abs_path).suffix.lower() in {'.heic', '.heif'}:
+        # HEIC / DNG / JPEG XL 等浏览器无法直接显示的格式, 转为 JPEG
+        if Path(abs_path).suffix.lower() not in BROWSER_PREVIEWABLE_SUFFIXES:
             response = send_file(
-                convert_heic_to_jpeg(abs_path),
+                to_jpeg_buffer(abs_path),
                 mimetype='image/jpeg',
                 download_name=f"{Path(abs_path).stem}.jpg"
             )
@@ -178,15 +179,12 @@ def handle_process():
             return False, False, f"文件不存在: {input_path}"
 
         try:
-            # 获取 input_path 相对 input_folder 的位置
-            relative_path = os.path.relpath(input_path, input_folder)
-            # 基于 output_folder 组装出输出路径 output_path
-            output_path = os.path.join(output_folder, relative_path)
+            # 基于 output_folder 组装出输出路径 output_path（RAW 输出为 JPEG）
+            output_path = resolve_output_path(input_path, input_folder, output_folder)
 
             # 如果路径不存在, 那么递归创建文件夹
-            output_dir = os.path.dirname(output_path)
-            if not os.path.exists(output_dir):
-                os.makedirs(output_dir)
+            # 多线程同时处理同一目录下的文件, 需要 exist_ok 避免竞争
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
             # 如果 output_path 对应的文件存在, 直接跳过
             if os.path.exists(output_path) and not config.getboolean('DEFAULT', 'override_existed'):

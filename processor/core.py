@@ -8,9 +8,10 @@ from enum import Enum
 from itertools import chain
 from typing import Dict, Any, Type, List, MutableMapping, Iterator, Optional
 
-from PIL import Image, ImageColor, ImageOps
+from PIL import Image, ImageColor
 
 from core.configs import load_config
+from core.image_io import open_image
 from core.logger import logger
 from core.util import get_exif, log_rt
 
@@ -69,7 +70,7 @@ class PipelineContext(MutableMapping):
 
     def get_buffer(self) -> List[Image]:
         if not self.get("buffer_loaded", False) and self.get("buffer_path"):
-            self.set("buffer", [ImageOps.exif_transpose(Image.open(path)) for path in self.get("buffer_path")])
+            self.set("buffer", [open_image(path) for path in self.get("buffer_path")])
             self.set("buffer_loaded", True)
         return self.get("buffer", [])
 
@@ -291,6 +292,8 @@ def start_process(data: List[dict], input_path: str = None, output_path: str = N
 
     # 所有处理器的输出, 0 被看作是头元素的输出
     output = nodes[0].get_buffer()
+    # 原图的色彩配置文件（iPhone 为 Display P3），输出时写回，避免颜色发灰
+    icc_profile = output[0].info.get('icc_profile') if output else None
 
     all_buffer = [output]
     last_merger_idx = -1
@@ -324,6 +327,11 @@ def start_process(data: List[dict], input_path: str = None, output_path: str = N
 
     nodes[-1].save_buffer("final").success()
     if output_path is not None:
-        nodes[-1].get_buffer()[0].convert("RGB").save(output_path, quality=load_config().getint('DEFAULT', 'quality'), subsampling=load_config().getint('DEFAULT', 'subsampling'))
+        config = load_config()
+        save_params = {'quality': config.getint('DEFAULT', 'quality'), 'icc_profile': icc_profile}
+        # subsampling 仅对 JPEG 生效, AVIF 等格式的同名参数类型不同
+        if Image.registered_extensions().get(os.path.splitext(output_path)[1].lower()) == 'JPEG':
+            save_params['subsampling'] = config.getint('DEFAULT', 'subsampling')
+        nodes[-1].get_buffer()[0].convert("RGB").save(output_path, **save_params)
         logger.success(f"Generated new image: {output_path}")
     return nodes[-1].get_buffer()[0]

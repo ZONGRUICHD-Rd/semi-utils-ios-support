@@ -1,30 +1,17 @@
-import io
 import json
 import os
-import platform
 import re
-import shutil
 import subprocess
 import time
 from functools import wraps
 from pathlib import Path
 
-from PIL import Image
 from jinja2 import Template
 
-from core.configs import templates_dir
+from core.configs import templates_dir, EXIFTOOL_PATH
+from core.image_io import probe_size, output_suffix
 from core.jinja2renders import vh, vw, auto_logo
 from core.logger import logger
-
-if platform.system() == 'Windows':
-    EXIFTOOL_PATH = Path('./exiftool/exiftool.exe')
-    ENCODING = 'gbk'
-elif shutil.which('exiftool') is not None:
-    EXIFTOOL_PATH = shutil.which('exiftool')
-    ENCODING = 'utf-8'
-else:
-    EXIFTOOL_PATH = Path('./exiftool/exiftool')
-    ENCODING = 'utf-8'
 
 
 def get_exif(path) -> dict:
@@ -58,6 +45,11 @@ def get_exif(path) -> dict:
             value_clean = ''.join(c for c in value if ord(c) < 128)
             # 将处理后的值更新到 exif_dict 中
             exif_dict[key] = value_clean
+
+        # RAW 以实际解码出的图像尺寸为准（可能使用的是内嵌预览图）
+        size = probe_size(path)
+        if size is not None:
+            exif_dict['ImageWidth'], exif_dict['ImageHeight'] = str(size[0]), str(size[1])
     except Exception as e:
         logger.error(f'get_exif error: {path} : {e}')
 
@@ -140,16 +132,13 @@ def log_rt(func):
     return wrapper
 
 
-def convert_heic_to_jpeg(path: str, quality: int = 90) -> io.BytesIO:
-    """转换 HEIC 为 JPEG 字节流"""
-    with Image.open(path) as img:
-        if img.mode in ('RGBA', 'P', 'LA'):
-            img = img.convert('RGB')
-
-        buffer = io.BytesIO()
-        img.save(buffer, format='JPEG', quality=quality)
-        buffer.seek(0)
-        return buffer
+def resolve_output_path(input_path: str, input_folder: str, output_folder: str) -> str:
+    """
+    基于 output_folder 组装出输出路径, 保持与 input_folder 相同的目录结构
+    RAW 等无法写回原格式的文件, 输出为 JPEG
+    """
+    relative_path = Path(os.path.relpath(input_path, input_folder))
+    return str(Path(output_folder) / relative_path.with_suffix(output_suffix(input_path)))
 
 
 # ==================== 模板管理相关方法 ====================

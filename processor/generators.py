@@ -10,6 +10,7 @@ import numpy as np
 from PIL import ImageFont, Image, ImageDraw
 
 from core.configs import fonts_dir
+from core.image_io import open_image
 from processor.core import PipelineContext, ImageProcessor, Direction, _parse_color
 
 BASE_FONT_SIZE = 512
@@ -268,9 +269,9 @@ class MultiRichTextGenerator(Generator):
 class ImageLoader(Generator):
     def process(self, ctx: PipelineContext):
         if isinstance(ctx.get('path'), str):
-            ctx.update_buffer([Image.open(ctx.get('path'))]).success()
+            ctx.update_buffer([open_image(ctx.get('path'))]).success()
         elif isinstance(ctx.get('path'), list):
-            ctx.update_buffer([Image.open(path) for path in ctx.get('path')])
+            ctx.update_buffer([open_image(path) for path in ctx.get('path')])
 
     def name(self) -> str:
         return "image"

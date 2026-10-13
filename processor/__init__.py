@@ -1,7 +1,5 @@
 import importlib
 
-import pillow_heif
-
 from core.logger import logger
 from processor import core
 
@@ -32,7 +30,3 @@ def _get_all_processor_classes():
 
 # 自动注册所有处理器
 _auto_register_processors()
-
-# 注册 pillow heic 支持
-pillow_heif.register_heif_opener()
-logger.debug("Registered plugin: pillow_heif")
