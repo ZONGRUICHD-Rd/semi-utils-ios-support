@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Semi-Utils Web</title>
+  <meta name="description" content="在浏览器里给照片加上相机参数水印，支持 iPhone 18 Pro 拍摄的 HEIC、ProRAW DNG、JPEG XL 等全部格式，照片不会上传。">
+  <meta name="theme-color" content="#FAF9F5" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#262624" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23C96442'/%3E%3Cg fill='none' stroke='%23FAF9F5' stroke-width='2.2' stroke-linecap='round'%3E%3Cpath d='M16 7l5 9M25 16l-9 5M16 25l-5-9M7 16l9-5'/%3E%3C/g%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="Semi-Utils Web 首页">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14"/><path d="M16 7l5 9M25 16l-9 5M16 25l-5-9M7 16l9-5"/></svg>
+      <span class="brand-name">Semi-Utils</span>
+      <span class="brand-tag">Web</span>
+    </a>
+    <div class="topbar-actions">
+      <button class="icon-btn" id="themeBtn" type="button" aria-label="切换浅色 / 深色">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z"/></svg>
+      </button>
+      <a class="icon-btn" href="https://github.com/zongruichd-rd/semi-utils-ios-support" target="_blank" rel="noopener" aria-label="GitHub 仓库">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.08 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.99 1.03-2.69-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.03a9.5 9.5 0 0 1 5 0c1.91-1.3 2.75-1.03 2.75-1.03.55 1.38.2 2.4.1 2.65.64.7 1.03 1.6 1.03 2.69 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2z"/></svg>
+      </a>
+    </div>
+  </header>
+
+  <!-- 欢迎页 -->
+  <main id="welcome" class="welcome">
+    <h1 class="greeting">
+      <svg class="greeting-mark" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="13"/><path d="M16 7l5 9M25 16l-9 5M16 25l-5-9M7 16l9-5"/></svg>
+      把拍摄参数，留在照片上
+    </h1>
+    <p class="lede">支持 iPhone 18 Pro 拍摄的全部格式。照片只在你的浏览器里处理，不会上传到任何地方。</p>
+
+    <section class="composer" id="dropzone" tabindex="0" aria-label="选择或拖入照片">
+      <p class="composer-placeholder">把照片拖到这里，或从相册、文件夹中选择…</p>
+      <div class="composer-row">
+        <div class="composer-tools">
+          <button class="tool-btn" type="button" data-pick="files">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>添加照片</span>
+          </button>
+          <button class="tool-btn" type="button" data-pick="folder">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span>选择文件夹</span>
+          </button>
+        </div>
+        <button class="send-btn" type="button" data-pick="files" aria-label="选择照片">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
+        </button>
+      </div>
+    </section>
+
+    <ul class="formats" aria-label="支持的格式">
+      <li>HEIC</li><li>HEIF Max</li><li>ProRAW DNG</li><li>JPEG</li><li>JPEG XL</li><li>AVIF</li><li>PNG</li><li>WebP</li><li>TIFF</li>
+    </ul>
+
+    <h2 class="section-title">选一个样式</h2>
+    <div class="gallery" id="gallery"></div>
+  </main>
+
+  <!-- 工作区 -->
+  <main id="workspace" class="workspace" hidden>
+    <aside class="sidebar">
+      <div class="sidebar-head">
+        <span class="sidebar-title">照片 <span class="count" id="count">0</span></span>
+        <div class="sidebar-actions">
+          <button class="text-btn" type="button" data-pick="files">添加</button>
+          <button class="text-btn muted" type="button" id="clearBtn">清空</button>
+        </div>
+      </div>
+      <ul class="photo-list" id="photoList" role="listbox" aria-label="照片列表"></ul>
+    </aside>
+
+    <section class="stage">
+      <div class="style-bar" id="styleBar" role="tablist" aria-label="水印样式"></div>
+      <div class="canvas-wrap" id="canvasWrap">
+        <div class="stage-status" id="stageStatus"><span class="spinner"></span><span>正在解码…</span></div>
+      </div>
+      <p class="stage-info" id="stageInfo"></p>
+    </section>
+
+    <aside class="panel">
+      <details class="card" open>
+        <summary>水印文字</summary>
+        <div class="fields">
+          <label class="field"><span>机型</span><input id="f-model" autocomplete="off" spellcheck="false"></label>
+          <label class="field"><span>镜头</span><input id="f-lens" autocomplete="off" spellcheck="false"></label>
+          <label class="field"><span>参数</span><input id="f-params" autocomplete="off" spellcheck="false"></label>
+          <label class="field"><span>日期</span><input id="f-date" autocomplete="off" spellcheck="false"></label>
+          <label class="field"><span>自定义文字</span><input id="f-custom" autocomplete="off" spellcheck="false" placeholder="用于「文字 + 日期」样式"></label>
+          <div class="field-row">
+            <label class="switch"><input type="checkbox" id="shortLens" checked><span class="switch-track"></span><span>精简 iPhone 镜头名</span></label>
+            <button class="text-btn" type="button" id="resetTexts">恢复自动</button>
+          </div>
+          <label class="field"><span>Logo</span><select id="logoSelect"></select></label>
+        </div>
+      </details>
+
+      <details class="card" open>
+        <summary>导出</summary>
+        <div class="fields">
+          <div class="field"><span>格式</span>
+            <div class="segmented" id="formatSeg" role="radiogroup" aria-label="导出格式">
+              <button type="button" data-value="jpeg" role="radio">JPEG</button>
+              <button type="button" data-value="png" role="radio">PNG</button>
+              <button type="button" data-value="webp" role="radio">WebP</button>
+            </div>
+          </div>
+          <label class="field" id="qualityField"><span>质量 <output id="qualityOut">92</output></span>
+            <input type="range" id="quality" min="50" max="100" step="1" value="92">
+          </label>
+          <label class="field"><span>最长边</span>
+            <select id="maxEdge">
+              <option value="0">原始尺寸</option>
+              <option value="4096">4096 px</option>
+              <option value="3072">3072 px</option>
+              <option value="2048">2048 px</option>
+              <option value="1080">1080 px</option>
+            </select>
+          </label>
+          <div class="export-actions">
+            <button class="btn" type="button" id="exportOne">导出这张</button>
+            <button class="btn primary" type="button" id="exportAll">全部导出</button>
+          </div>
+          <div class="progress" id="progress" hidden>
+            <div class="progress-bar"><span id="progressFill"></span></div>
+            <p class="progress-text" id="progressText"></p>
+          </div>
+          <button class="btn primary wide" type="button" id="shareBtn" hidden>分享 / 存储到相册</button>
+          <p class="fineprint" id="colorNote"></p>
+        </div>
+      </details>
+    </aside>
+  </main>
+
+  <div class="drop-overlay" id="dropOverlay" hidden><div>松开即可添加照片</div></div>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <input type="file" id="fileInput" multiple hidden>
+  <input type="file" id="folderInput" webkitdirectory multiple hidden>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

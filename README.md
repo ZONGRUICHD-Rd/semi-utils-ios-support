@@ -28,6 +28,16 @@
 | [center_logo](./static/center_logo.json) | 中心 Logo 水印，可自定义四周文字内容 | ![center_logo](./static/center_logo.jpeg)       |
 
 
+## Web 版
+
+**在线使用：<https://zongruichd-rd.github.io/semi-utils-ios-support/>**
+
+无需安装，在浏览器中直接给照片加水印，照片只在本地处理、不会上传。支持 iPhone 18 Pro 的全部照片格式（HEIC / HEIF、ProRAW DNG、JPEG、JPEG XL、AVIF、PNG、WebP、TIFF），提供经典白底、圆角卡片、背景模糊、右下角参数、文字 + 日期、居中 Logo 六种样式，支持批量导出 ZIP、在 iPhone 上直接分享 / 存储到相册，并以 Display P3 广色域输出。
+
+- 源码位于 [`web/`](web)，纯静态页面，无需构建；本地预览：`python3 -m http.server -d web`
+- 推送到 `main` 后由 [`pages.yml`](.github/workflows/pages.yml) 自动发布到 `gh-pages` 分支
+- ProRAW 在浏览器端使用 DNG 内嵌的全尺寸预览图（即苹果官方渲染效果）；如需从 RAW 数据冲洗，请使用桌面版
+
 ## iPhone 照片格式支持
 
 支持 iPhone（含 iPhone 18 Pro）相机与系统产出的全部照片格式：
